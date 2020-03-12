@@ -175,27 +175,32 @@ class Spotify:
         all_tracks_id = []
         duplicate_tracks = []
         id = None
-        for x in range(len(playlist_dict['items'])):  # to be optimized
+        for x in range(len(playlist_dict['items'])):  # to be optimized, It searches for the playlist name provided by the user, if a playlist exist with that name then extract its id
             if (playlist_dict['items'][x]['name'].lower() == playlist_name.lower()):
                 id = playlist_dict['items'][x]['id']
                 all_tracks_id = self.fetch_all_songs(id)
             else:
                 continue
-        if(all_tracks_id):
-            for x in range(len(all_tracks_id)):
-                if(all_tracks_id.count(all_tracks_id[x]) > 1):
-                    duplicate_tracks.append(all_tracks_id[x])
-                else:
-                    continue
-        if(duplicate_tracks):
-            self.sp.user_playlist_remove_all_occurrences_of_tracks(self.username, id, duplicate_tracks) #To be updated to complete in 1 API call
-            add_songs = list(dict.fromkeys(duplicate_tracks))
-            self.sp.user_playlist_add_tracks(self.username,id, add_songs)
+        if(id!=None):
+            if(all_tracks_id):
+                for x in range(len(all_tracks_id)):
+                    if(all_tracks_id.count(all_tracks_id[x]) > 1):
+                        duplicate_tracks.append(all_tracks_id[x])
+                    else:
+                        continue
+            if(duplicate_tracks):
+                self.sp.user_playlist_remove_all_occurrences_of_tracks(self.username, id, duplicate_tracks) #To be updated to complete in 1 API call
+                add_songs = list(dict.fromkeys(duplicate_tracks))
+                self.sp.user_playlist_add_tracks(self.username,id, add_songs)
+            print(str(len(duplicate_tracks)) + " " + "Duplicates removed")
+        else:
+            print("no playlist found with the provided name")
 
-        print(str(len(duplicate_tracks))+" "+ "Duplicates removed")
+
+
 
 # parameters username, playlistname, clientid, secretkey, redirecturl
 
-s = Spotify( 'Jairaj_mehra', "All Songs",  "9e64875b9aa6407c9acd406368d96ec1","b71d8775a7f34b6f8d6eef66981b5a99", 'https://www.google.com')
+s = Spotify( user_name=, playlist_name=,  client_id=,secret_key=, redirect_url='https://www.google.com')
 s.run()
-s.remove_duplicate('All songs')
+s.remove_duplicate(playlist_name='All songs') # playlist name from which to delete duplicates.
