@@ -2,6 +2,7 @@ import requests
 import MusixMatchAPi as mm
 from googletrans import Translator
 import spotipy
+
 # List of all regional languages in India, we want all of them to be identified as Hindi
 HindiLanguages = ['bn', 'gu', 'kn', 'mg', 'ms', 'ml', 'mr', 'pa', 'ta', 'te', 'ur']
 
@@ -17,17 +18,18 @@ class Spotify:
         except Exception:
             print(Exception)
         self.username = user_name
-        self.playlist_name = playlist_name # Name of the playlist to arrange into sub playlist namely English, Hindi and Foreign
-        self.playlist_id = None
-        self.trans = Translator() # This object will be used to detect language of a track based on title and album name
-        self.tracks_dict = {} #
+        self.master_playlist_name = playlist_name # Name of the playlist to arrange into sub playlist namely English, Hindi and Foreign
+        self.master_playlist_id = None
+        self.translator = Translator() # This object will be used to detect language of a track based on title and album name
+        self.tracks_dict = {}
         self.hindi_playlist_id = None
         self.english_playlist_id = None
-        self.songs_to_skip = []
         self.foreign_playlist_id = None
+        self.songs_to_skip = [] #
+
         self.songs_to_addback = [] # If any songs are in Playlist Hindi, English or Foreign and not in the master PlayList then this list will be used to add them to the Master Playlist
         self.songs_to_arrange = [] # List of the songs that are in the master playlist provided by the user but not in the sub playlists, So they need to be put into the right sub playlist
-        self.limit = 100 # 100 is the maximum limit supported by spotify APi
+        self.LIMIT = 100 # 100 is the maximum limit supported by spotify APi
 
     def run(self):
         self.get_user_playlists()
@@ -35,8 +37,8 @@ class Spotify:
     def get_user_playlists(self):
         playlist_dict = self.sp.current_user_playlists()
         for x in range(len(playlist_dict['items'])):
-            if (playlist_dict['items'][x]['name'] == self.playlist_name):
-                self.playlist_id = playlist_dict['items'][x]['id']
+            if (playlist_dict['items'][x]['name'] == self.master_playlist_name):
+                self.master_playlist_id = playlist_dict['items'][x]['id']
 
             elif (playlist_dict['items'][x]['name'] == 'Hindi'):
                 self.hindi_playlist_id = playlist_dict['items'][x]['id']
@@ -70,7 +72,7 @@ class Spotify:
             self.songs_to_skip += (self.fetch_all_songs(self.english_playlist_id))
 
 
-        self.songs_to_arrange += (self.fetch_all_songs(self.playlist_id)) # Getting all songs from the user provided master playlist
+        self.songs_to_arrange += (self.fetch_all_songs(self.master_playlist_id)) # Getting all songs from the user provided master playlist
 
         self.songs_to_addback = list(set(self.songs_to_skip) - set(self.songs_to_arrange))
         self.songs_to_arrange = list(set(self.songs_to_arrange) - set(self.songs_to_skip))
@@ -112,7 +114,7 @@ class Spotify:
     def detect_track_language(self):
         for x in range(len(self.songs_to_arrange)):
             if (self.tracks_dict[self.songs_to_arrange[x]]['Lang'] is None):
-                lang = self.trans.detect(
+                lang = self.translator.detect(
                     self.tracks_dict[self.songs_to_arrange[x]]['Title'] + " " + self.tracks_dict[self.songs_to_arrange[x]]['Album']) # Using track title and album name to detect track language
                 if (lang.lang in HindiLanguages):
                     self.tracks_dict[self.songs_to_arrange[x]]['Lang'] = 'hi'
@@ -151,18 +153,18 @@ class Spotify:
         print(str(len(self.songs_to_arrange)) + " " + 'Songs arranged')
 
     def add_songs_to_master_playlist(self):
-        print(str(len(self.songs_to_addback)) + " " + "songs added to " + self.playlist_name)
+        print(str(len(self.songs_to_addback)) + " " + "songs added to " + self.master_playlist_name)
         if (self.songs_to_addback):
-            self.sp.user_playlist_add_tracks(self.username, self.playlist_id, self.songs_to_addback)
+            self.sp.user_playlist_add_tracks(self.username, self.master_playlist_id, self.songs_to_addback)
 
     def fetch_all_songs(self, playlist_id):
         all_tracks_id = []
-        songs = self.sp.playlist_tracks(playlist_id, limit=self.limit, offset=0)
+        songs = self.sp.playlist_tracks(playlist_id, limit=self.LIMIT, offset=0)
         while True:
             for i in range(len(songs['items'])):
                 all_tracks_id.append(songs['items'][i]['track']['id'])
-            if ((len(songs['items']) >= self.limit)):
-                songs = self.sp.playlist_tracks(playlist_id, limit=self.limit,offset=len(songs['items']))
+            if ((len(songs['items']) >= self.LIMIT)):
+                songs = self.sp.playlist_tracks(playlist_id, limit=self.LIMIT,offset=len(songs['items']))
             else:
                 return all_tracks_id
 
@@ -193,6 +195,7 @@ class Spotify:
         print(str(len(duplicate_tracks))+" "+ "Duplicates removed")
 
 # parameters username, playlistname, clientid, secretkey, redirecturl
-s = Spotify( 'jairaj_mehra', "All Songs",  "9e64875b9aa6407c9acd406368d96ec1","b71d8775a7f34b6f8d6eef66981b5a99", 'https://www.google.com')
+
+s = Spotify( 'Jairaj_mehra', "All Songs",  "9e64875b9aa6407c9acd406368d96ec1","b71d8775a7f34b6f8d6eef66981b5a99", 'https://www.google.com')
 s.run()
 s.remove_duplicate('All songs')
